@@ -45,7 +45,7 @@ make clean
 Command line options:
 
 ```
-Usage: regex.bin [OPTIONS...] [REGEX] [STR]
+Usage: regex.bin [OPTIONS...] [PATTERN] [STRING]
 
 Options:
 
