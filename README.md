@@ -29,9 +29,9 @@ Escaped sequences:
 ```
 \a ... bell
 \b ... backspace
-\t ... tab
+\t ... horizontal tab
 \r ... carriage return
-\n ... newline
+\n ... new line
 \v ... vertical tab
 \f ... form feed
 ```
@@ -68,6 +68,14 @@ To clean the project, simply type:
 make clean
 ```
 
+### Check the project
+
+To check the project with some tests, simply type:
+
+```
+make check
+```
+
 ## HOW TO RUN
 
 ### Usage
@@ -75,18 +83,42 @@ make clean
 Command line options:
 
 ```
-Usage: regex.bin [OPTIONS...] [PATTERN] [STRING]
+Usage: pico-regex.bin [OPTIONS...] [PATTERN] [STRING]
 
 Options:
 
   -h, --help                    display this help and exit
+  -v, --verbose                 verbose mode
+  -q, --quiet                   quiet mode
+  -1, --error                   error log level
+  -2, --alert                   alert log level
+  -3, --print                   print log level (default)
+  -4, --debug                   debug log level
+  -5, --trace                   trace log level
 
 ```
 
 ### Run
 
+You will find the program into the `bin` directory:
+
 ```
-./regex.bin
+./bin/pico-regex.bin
+```
+
+Example:
+
+```
+./bin/pico-regex.bin '^lorem.*amet$' 'lorem ipsum dolor sit amet'
+```
+
+Result:
+
+```
+🔵 compiling "^lorem.*amet$"
+🟢 the regular expression has been compiled
+🔵 comparing "lorem ipsum dolor sit amet"
+🟢 the string matches the regular expression
 ```
 
 ## LICENSE

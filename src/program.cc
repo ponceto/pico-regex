@@ -44,11 +44,14 @@ auto Program::init(const ArgList& args) -> bool
     static const std::locale new_locale("");
     static const std::locale old_locale(std::locale::global(new_locale));
 
-    auto do_parse = [&]() -> bool
+    auto do_init = [&]() -> bool
     {
+        int argn =  0;
         int argi = -1;
         for(auto& arg : args) {
             if(++argi == 0) {
+                Globals::arg0 = arg;
+                ++argn;
                 continue;
             }
             else if(arg == "-h") {
@@ -57,24 +60,40 @@ auto Program::init(const ArgList& args) -> bool
             else if(arg == "--help") {
                 return false;
             }
-            else if(Globals::pattern.empty()) {
-                Globals::pattern = arg;
+            else if((arg == "-v") || (arg == "--verbose")) {
+                Globals::loglevel = LogLevel::LOG_TRACE;
             }
-            else if(Globals::string.empty()) {
-                Globals::string = arg;
+            else if((arg == "-q") || (arg == "--quiet")) {
+                Globals::loglevel = LogLevel::LOG_QUIET;
+            }
+            else if((arg == "-1") || (arg == "--error")) {
+                Globals::loglevel = LogLevel::LOG_ERROR;
+            }
+            else if((arg == "-2") || (arg == "--alert")) {
+                Globals::loglevel = LogLevel::LOG_ALERT;
+            }
+            else if((arg == "-3") || (arg == "--print")) {
+                Globals::loglevel = LogLevel::LOG_PRINT;
+            }
+            else if((arg == "-4") || (arg == "--debug")) {
+                Globals::loglevel = LogLevel::LOG_DEBUG;
+            }
+            else if((arg == "-5") || (arg == "--trace")) {
+                Globals::loglevel = LogLevel::LOG_TRACE;
+            }
+            else if(argn == 1) {
+                Globals::arg1 = arg;
+                ++argn;
+            }
+            else if(argn == 2) {
+                Globals::arg2 = arg;
+                ++argn;
             }
             else {
                 throw std::runtime_error(std::string("invalid argument") + ' ' + '\'' + arg + '\'');
             }
         }
         return true;
-    };
-
-    auto do_init = [&]() -> bool
-    {
-        Globals::init();
-
-        return do_parse();
     };
 
     return do_init();
@@ -84,15 +103,15 @@ auto Program::main(const ArgList& args) -> void
 {
     auto do_main = [&](std::ostream& stream) -> void
     {
-        RegExp regexp;
-        if(regexp.compile(Globals::pattern) == false) {
-            throw std::runtime_error("invalid expression");
+        RegExp regexp(stream, Globals::loglevel);
+
+        if(regexp.compile(Globals::arg1) == false) {
+            Globals::exitcode = EXIT_FAILURE;
+            return;
         }
-        if(regexp.compare(Globals::string) != false) {
-            std::cout << "the string matches the regular expression" << std::endl;
-        }
-        else {
-            std::cout << "the string does not match the regular expression" << std::endl;
+        if(regexp.execute(Globals::arg2) == false) {
+            Globals::exitcode = EXIT_FAILURE;
+            return;
         }
     };
 
@@ -101,9 +120,9 @@ auto Program::main(const ArgList& args) -> void
 
 auto Program::help(const ArgList& args) -> void
 {
-    auto program_name = [&]() -> const char*
+    auto program_name = []() -> const char*
     {
-        const char* arg = args[0].c_str();
+        const char* arg = Globals::arg0.c_str();
         const char* sep = ::strrchr(arg, '/');
         if(sep != nullptr) {
             arg = (sep + 1);
@@ -118,6 +137,13 @@ auto Program::help(const ArgList& args) -> void
         stream << "Options:"                                                        << std::endl;
         stream << ""                                                                << std::endl;
         stream << "  -h, --help                    display this help and exit"      << std::endl;
+        stream << "  -v, --verbose                 verbose mode"                    << std::endl;
+        stream << "  -q, --quiet                   quiet mode"                      << std::endl;
+        stream << "  -1, --error                   error log level"                 << std::endl;
+        stream << "  -2, --alert                   alert log level"                 << std::endl;
+        stream << "  -3, --print                   print log level (default)"       << std::endl;
+        stream << "  -4, --debug                   debug log level"                 << std::endl;
+        stream << "  -5, --trace                   trace log level"                 << std::endl;
         stream << ""                                                                << std::endl;
     };
 
@@ -148,7 +174,7 @@ int main(int argc, char* argv[])
         std::cerr << "error!" << std::endl;
         return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
+    return Globals::exitcode;
 }
 
 // ---------------------------------------------------------------------------

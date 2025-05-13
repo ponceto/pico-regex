@@ -1,5 +1,5 @@
 /*
- * globals.cc - Copyright (c) 2024-2025 - Olivier Poncet
+ * loglevel.cc - Copyright (c) 2024-2025 - Olivier Poncet
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,17 +31,11 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include "globals.h"
+#include "loglevel.h"
 
 // ---------------------------------------------------------------------------
-// Globals
+// LogLevel
 // ---------------------------------------------------------------------------
-
-std::string Globals::arg0     = "pico-regex";
-std::string Globals::arg1     = "";
-std::string Globals::arg2     = "";
-uint32_t    Globals::loglevel = 3;
-int         Globals::exitcode = EXIT_SUCCESS;
 
 // ---------------------------------------------------------------------------
 // End-Of-File

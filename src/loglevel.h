@@ -1,5 +1,5 @@
 /*
- * globals.cc - Copyright (c) 2024-2025 - Olivier Poncet
+ * loglevel.h - Copyright (c) 2024-2025 - Olivier Poncet
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,35 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cstdint>
-#include <cstdarg>
-#include <cmath>
-#include <chrono>
-#include <thread>
-#include <memory>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <stdexcept>
-#include "globals.h"
+#ifndef __LogLevel_h__
+#define __LogLevel_h__
 
 // ---------------------------------------------------------------------------
-// Globals
+// some type aliases
 // ---------------------------------------------------------------------------
 
-std::string Globals::arg0     = "pico-regex";
-std::string Globals::arg1     = "";
-std::string Globals::arg2     = "";
-uint32_t    Globals::loglevel = 3;
-int         Globals::exitcode = EXIT_SUCCESS;
+using IStream = std::istream;
+using OStream = std::ostream;
+
+// ---------------------------------------------------------------------------
+// LogLevel
+// ---------------------------------------------------------------------------
+
+struct LogLevel
+{
+    static constexpr uint32_t LOG_QUIET = 0;
+    static constexpr uint32_t LOG_ERROR = 1;
+    static constexpr uint32_t LOG_ALERT = 2;
+    static constexpr uint32_t LOG_PRINT = 3;
+    static constexpr uint32_t LOG_DEBUG = 4;
+    static constexpr uint32_t LOG_TRACE = 5;
+};
 
 // ---------------------------------------------------------------------------
 // End-Of-File
 // ---------------------------------------------------------------------------
+
+#endif /* __LogLevel_h__ */

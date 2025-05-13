@@ -52,61 +52,83 @@ RMFLAGS  = -f
 
 all: build
 
-build: build_regex
+build: build_pico_regex
 	@echo "=== $@ ok ==="
 
-clean: clean_regex
+clean: clean_pico_regex
+	@echo "=== $@ ok ==="
+
+check: check_pico_regex
 	@echo "=== $@ ok ==="
 
 # ----------------------------------------------------------------------------
 # regex files
 # ----------------------------------------------------------------------------
 
-regex_PROGRAM = regex.bin
+pico_regex_PROGRAM = bin/pico-regex.bin
 
-regex_SOURCES = \
+pico_regex_SOURCES = \
 	src/globals.cc \
 	src/program.cc \
+	src/loglevel.cc \
+	src/bytecode.cc \
+	src/compiler.cc \
+	src/executor.cc \
 	src/regexp.cc \
 	$(NULL)
 
-regex_HEADERS = \
+pico_regex_HEADERS = \
 	src/globals.h \
 	src/program.h \
+	src/loglevel.h \
+	src/bytecode.h \
+	src/compiler.h \
+	src/executor.h \
 	src/regexp.h \
 	$(NULL)
 
-regex_OBJECTS = \
+pico_regex_OBJECTS = \
 	src/globals.o \
 	src/program.o \
+	src/loglevel.o \
+	src/bytecode.o \
+	src/compiler.o \
+	src/executor.o \
 	src/regexp.o \
 	$(NULL)
 
-regex_LDFLAGS = \
+pico_regex_LDFLAGS = \
 	$(NULL)
 
-regex_LDADD = \
+pico_regex_LDADD = \
 	-lpthread \
 	$(NULL)
 
-regex_CLEANFILES = \
+pico_regex_CLEANFILES = \
 	$(NULL)
 
 # ----------------------------------------------------------------------------
 # build regex
 # ----------------------------------------------------------------------------
 
-build_regex: $(regex_PROGRAM)
+build_pico_regex: $(pico_regex_PROGRAM)
 
-$(regex_PROGRAM): $(regex_OBJECTS)
-	$(LD) $(LDFLAGS) $(regex_LDFLAGS) -o $(regex_PROGRAM) $(regex_OBJECTS) $(regex_LDADD)
+$(pico_regex_PROGRAM): $(pico_regex_OBJECTS)
+	$(LD) $(LDFLAGS) $(pico_regex_LDFLAGS) -o $(pico_regex_PROGRAM) $(pico_regex_OBJECTS) $(pico_regex_LDADD)
 
 # ----------------------------------------------------------------------------
 # clean regex
 # ----------------------------------------------------------------------------
 
-clean_regex:
-	$(RM) $(RMFLAGS) $(regex_OBJECTS) $(regex_PROGRAM) $(regex_CLEANFILES)
+clean_pico_regex:
+	$(RM) $(RMFLAGS) $(pico_regex_OBJECTS) $(pico_regex_PROGRAM) $(pico_regex_CLEANFILES)
+
+# ----------------------------------------------------------------------------
+# check regex
+# ----------------------------------------------------------------------------
+
+check_pico_regex:
+	cd ./bin && ./testsuite.sh
 
 # ----------------------------------------------------------------------------
 # End-Of-File

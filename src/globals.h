@@ -23,9 +23,11 @@
 
 struct Globals
 {
-    static auto init() -> void;
-    static std::string pattern;
-    static std::string string;
+    static std::string arg0;
+    static std::string arg1;
+    static std::string arg2;
+    static uint32_t    loglevel;
+    static int         exitcode;
 };
 
 // ---------------------------------------------------------------------------

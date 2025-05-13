@@ -1,5 +1,5 @@
 /*
- * globals.cc - Copyright (c) 2024-2025 - Olivier Poncet
+ * executor.h - Copyright (c) 2024-2025 - Olivier Poncet
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,35 +14,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cstdint>
-#include <cstdarg>
-#include <cmath>
-#include <chrono>
-#include <thread>
-#include <memory>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <stdexcept>
-#include "globals.h"
+#ifndef __Executor_h__
+#define __Executor_h__
+
+#include "loglevel.h"
+#include "bytecode.h"
 
 // ---------------------------------------------------------------------------
-// Globals
+// Executor
 // ---------------------------------------------------------------------------
 
-std::string Globals::arg0     = "pico-regex";
-std::string Globals::arg1     = "";
-std::string Globals::arg2     = "";
-uint32_t    Globals::loglevel = 3;
-int         Globals::exitcode = EXIT_SUCCESS;
+class Executor
+{
+public: // public interface
+    Executor(ByteCode&, OStream&, const uint32_t loglevel);
+
+    Executor(Executor&&) = delete;
+
+    Executor(const Executor&) = delete;
+
+    Executor& operator=(Executor&&) = delete;
+
+    Executor& operator=(const Executor&) = delete;
+
+    virtual ~Executor() = default;
+
+    auto execute(const std::string& string) -> bool;
+
+protected: // protected interface
+    auto begin(const std::string& string) -> void;
+
+    auto success() -> bool;
+
+    auto failure() -> bool;
+
+    auto match(ByteCodeIterator bytecode, StringIterator iterator) -> bool;
+
+protected: // protected data
+    OStream&       _ostream;
+    const uint32_t _loglevel;
+    ByteCode&      _bytecode;
+};
 
 // ---------------------------------------------------------------------------
 // End-Of-File
 // ---------------------------------------------------------------------------
+
+#endif /* __Executor_h__ */
