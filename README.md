@@ -6,6 +6,36 @@ A very minimal and very incomplete [RegEx](https://en.wikipedia.org/wiki/Regular
 
 This program is written in C++ and implements a very minimal and very incomplete RegEx engine to demonstrate how it can be done in a few number of lines of code.
 
+The regex engine quite simple and supports only a little subset of the regular expressions grammar.
+
+Metacharacters:
+
+```
+^ ... start of text
+$ ... end of text
+. ... any character
+```
+
+Quantifiers:
+
+```
+? ... zero or one occurences
+* ... zero or more occurences
++ ... one or more occurences
+```
+
+Escaped sequences:
+
+```
+\a ... bell
+\b ... backspace
+\t ... tab
+\r ... carriage return
+\n ... newline
+\v ... vertical tab
+\f ... form feed
+```
+
 ## HOW TO BUILD
 
 ### Install the dependencies
