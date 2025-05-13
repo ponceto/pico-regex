@@ -80,6 +80,8 @@ Usage: regex.bin [OPTIONS...] [PATTERN] [STRING]
 Options:
 
   -h, --help                    display this help and exit
+  -v, --verbose                 verbose mode
+  -q  --quiet                   quiet mode
 
 ```
 

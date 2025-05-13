@@ -24,6 +24,8 @@
 struct Globals
 {
     static auto init() -> void;
+    static int         status;
+    static bool        verbose;
     static std::string pattern;
     static std::string string;
 };

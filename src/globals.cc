@@ -37,8 +37,10 @@
 // Globals
 // ---------------------------------------------------------------------------
 
-std::string Globals::pattern;
-std::string Globals::string;
+int         Globals::status  = EXIT_SUCCESS;
+bool        Globals::verbose = true;
+std::string Globals::pattern = "";
+std::string Globals::string  = "";
 
 auto Globals::init() -> void
 {

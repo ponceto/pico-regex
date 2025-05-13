@@ -57,6 +57,12 @@ auto Program::init(const ArgList& args) -> bool
             else if(arg == "--help") {
                 return false;
             }
+            else if((arg == "-v") || (arg == "--verbose")) {
+                Globals::verbose = true;
+            }
+            else if((arg == "-q") || (arg == "--quiet")) {
+                Globals::verbose = false;
+            }
             else if(Globals::pattern.empty()) {
                 Globals::pattern = arg;
             }
@@ -82,17 +88,26 @@ auto Program::init(const ArgList& args) -> bool
 
 auto Program::main(const ArgList& args) -> void
 {
+    auto do_print = [&](std::ostream& stream, const std::string& string) -> void
+    {
+        if(Globals::verbose != false) {
+            stream << string << std::endl;
+        }
+    };
+
     auto do_main = [&](std::ostream& stream) -> void
     {
         RegExp regexp;
         if(regexp.compile(Globals::pattern) == false) {
-            throw std::runtime_error("invalid expression");
+            throw std::runtime_error("invalid regular expression");
         }
         if(regexp.compare(Globals::string) != false) {
-            std::cout << "the string matches the regular expression" << std::endl;
+            do_print(stream, "the string matches the regular expression");
+            Globals::status = EXIT_SUCCESS;
         }
         else {
-            std::cout << "the string does not match the regular expression" << std::endl;
+            do_print(stream, "the string does not match the regular expression");
+            Globals::status = EXIT_FAILURE;
         }
     };
 
@@ -118,6 +133,8 @@ auto Program::help(const ArgList& args) -> void
         stream << "Options:"                                                        << std::endl;
         stream << ""                                                                << std::endl;
         stream << "  -h, --help                    display this help and exit"      << std::endl;
+        stream << "  -v, --verbose                 verbose mode"                    << std::endl;
+        stream << "  -q  --quiet                   quiet mode"                      << std::endl;
         stream << ""                                                                << std::endl;
     };
 
@@ -148,7 +165,7 @@ int main(int argc, char* argv[])
         std::cerr << "error!" << std::endl;
         return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
+    return Globals::status;
 }
 
 // ---------------------------------------------------------------------------
