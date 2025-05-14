@@ -68,6 +68,14 @@ To clean the project, simply type:
 make clean
 ```
 
+### Check the project
+
+To check the project with some tests, simply type:
+
+```
+make check
+```
+
 ## HOW TO RUN
 
 ### Usage

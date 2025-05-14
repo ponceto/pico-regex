@@ -88,7 +88,7 @@ auto Program::init(const ArgList& args) -> bool
 
 auto Program::main(const ArgList& args) -> void
 {
-    auto do_print = [&](std::ostream& stream, const std::string& string) -> void
+    auto println = [](std::ostream& stream, const std::string& string) -> void
     {
         if(Globals::verbose != false) {
             stream << string << std::endl;
@@ -98,15 +98,17 @@ auto Program::main(const ArgList& args) -> void
     auto do_main = [&](std::ostream& stream) -> void
     {
         RegExp regexp;
+        println(stream, std::string("compiling") + ' ' + '"' + Globals::pattern + '"');
         if(regexp.compile(Globals::pattern) == false) {
             throw std::runtime_error("invalid regular expression");
         }
+        println(stream, std::string("comparing") + ' ' + '"' + Globals::string + '"');
         if(regexp.compare(Globals::string) != false) {
-            do_print(stream, "the string matches the regular expression");
+            println(stream, "the string matches the regular expression");
             Globals::status = EXIT_SUCCESS;
         }
         else {
-            do_print(stream, "the string does not match the regular expression");
+            println(stream, "the string does not match the regular expression");
             Globals::status = EXIT_FAILURE;
         }
     };
