@@ -130,16 +130,16 @@ auto RegExp::exec_compile() -> bool
             const char character = *iterator;
             switch(character) {
                 case '?': // zero or one
-                    emit_rep(0, +1);
                     ++iterator;
+                    emit_rep(0, +1);
                     break;
                 case '*': // zero or more
-                    emit_rep(0, -1);
                     ++iterator;
+                    emit_rep(0, -1);
                     break;
                 case '+': // one or more
-                    emit_rep(1, -1);
                     ++iterator;
+                    emit_rep(1, -1);
                     break;
                 default:
                     break;
@@ -148,32 +148,105 @@ auto RegExp::exec_compile() -> bool
         return iterator - begin;
     };
 
-    auto accept_escaped_seq = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+    auto expect_stx = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
     {
         auto iterator = begin;
 
         if(iterator != end) {
             char character = *iterator;
+            if(character == '^') {
+                ++iterator;
+                emit_stx();
+            }
+            else {
+                throw std::runtime_error("stx was expected");
+            }
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, stx was expected");
+        }
+        return iterator - begin;
+    };
+
+    auto expect_etx = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+    {
+        auto iterator = begin;
+
+        if(iterator != end) {
+            char character = *iterator;
+            if(character == '$') {
+                ++iterator;
+                emit_etx();
+            }
+            else {
+                throw std::runtime_error("etx was expected");
+            }
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, etx was expected");
+        }
+        return iterator - begin;
+    };
+
+    auto expect_any = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+    {
+        auto iterator = begin;
+
+        if(iterator != end) {
+            char character = *iterator;
+            if(character == '.') {
+                ++iterator;
+                iterator += accept_quantifier(iterator, end);
+                emit_any();
+            }
+            else {
+                throw std::runtime_error("any was expected");
+            }
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, any was expected");
+        }
+        return iterator - begin;
+    };
+
+    auto expect_esc = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+    {
+        auto iterator = begin;
+
+        if(iterator != end) {
+            char character = *iterator;
+            if(character == '\\') {
+                ++iterator;
+            }
+            else {
+                throw std::runtime_error("esc was expected");
+            }
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, esc was expected");
+        }
+        if(iterator != end) {
+            char character = *iterator;
             switch(character) {
-                case 'a':
+                case 'a': // bell
                     character = '\a';
                     break;
-                case 'b':
+                case 'b': // backspace
                     character = '\b';
                     break;
-                case 't':
+                case 't': // horizontal tab
                     character = '\t';
                     break;
-                case 'r':
+                case 'r': // carriage return
                     character = '\r';
                     break;
-                case 'n':
+                case 'n': // newline
                     character = '\n';
                     break;
-                case 'v':
+                case 'v': // vertical tab
                     character = '\v';
                     break;
-                case 'f':
+                case 'f': // form feed
                     character = '\f';
                     break;
                 default:
@@ -199,8 +272,27 @@ auto RegExp::exec_compile() -> bool
                     emit_chr(character);
                     break;
                 default:
-                    throw std::runtime_error("invalid escaped sequence");
+                    throw std::runtime_error("invalid escape sequence");
             }
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, esc was expected");
+        }
+        return iterator - begin;
+    };
+
+    auto expect_chr = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+    {
+        auto iterator = begin;
+
+        if(iterator != end) {
+            char character = *iterator;
+            ++iterator;
+            iterator += accept_quantifier(iterator, end);
+            emit_chr(character);
+        }
+        else {
+            throw std::runtime_error("unexpected end of string, chr was expected");
         }
         return iterator - begin;
     };
@@ -220,26 +312,19 @@ auto RegExp::exec_compile() -> bool
                     case '+':
                         throw std::runtime_error("unexpected <+> quantifier");
                     case '^':
-                        ++iterator;
-                        emit_stx();
+                        iterator += expect_stx(iterator, end);
                         break;
                     case '$':
-                        ++iterator;
-                        emit_etx();
+                        iterator += expect_etx(iterator, end);
                         break;
                     case '.':
-                        ++iterator;
-                        iterator += accept_quantifier(iterator, end);
-                        emit_any();
+                        iterator += expect_any(iterator, end);
                         break;
                     case '\\':
-                        ++iterator;
-                        iterator += accept_escaped_seq(iterator, end);
+                        iterator += expect_esc(iterator, end);
                         break;
                     default:
-                        ++iterator;
-                        iterator += accept_quantifier(iterator, end);
-                        emit_chr(character);
+                        iterator += expect_chr(iterator, end);
                         break;
                 }
             } while(iterator != end);
