@@ -29,7 +29,7 @@ Escaped sequences:
 ```
 \a ... bell
 \b ... backspace
-\t ... tab
+\t ... horizontal tab
 \r ... carriage return
 \n ... newline
 \v ... vertical tab
