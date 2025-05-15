@@ -58,291 +58,14 @@ auto RegExp::compare(const std::string& string) -> bool
     return exec_compare();
 }
 
-auto RegExp::clear() -> void
-{
-    ByteCode().swap(_bytecode);
-}
-
-auto RegExp::emit_byte(const uint8_t value) -> void
-{
-    _bytecode.push_back(static_cast<uint8_t>((value >>  0) & 0xff));
-}
-
-auto RegExp::emit_word(const uint16_t value) -> void
-{
-    _bytecode.push_back(static_cast<uint8_t>((value >>  8) & 0xff));
-    _bytecode.push_back(static_cast<uint8_t>((value >>  0) & 0xff));
-}
-
-auto RegExp::emit_long(const uint32_t value) -> void
-{
-    _bytecode.push_back(static_cast<uint8_t>((value >> 24) & 0xff));
-    _bytecode.push_back(static_cast<uint8_t>((value >> 16) & 0xff));
-    _bytecode.push_back(static_cast<uint8_t>((value >>  8) & 0xff));
-    _bytecode.push_back(static_cast<uint8_t>((value >>  0) & 0xff));
-}
-
-auto RegExp::emit_nop() -> void
-{
-    emit_byte(OP_NOP);
-}
-
-auto RegExp::emit_stx() -> void
-{
-    emit_byte(OP_STX);
-}
-
-auto RegExp::emit_etx() -> void
-{
-    emit_byte(OP_ETX);
-}
-
-auto RegExp::emit_any() -> void
-{
-    emit_byte(OP_ANY);
-}
-
-auto RegExp::emit_chr(const uint8_t character) -> void
-{
-    emit_byte(OP_CHR);
-    emit_byte(character);
-}
-
-auto RegExp::emit_rep(const uint32_t min, const uint32_t max) -> void
-{
-    emit_byte(OP_REP);
-    emit_long(min);
-    emit_long(max);
-}
-
-auto RegExp::emit_ret() -> void
-{
-    emit_byte(OP_RET);
-}
-
 auto RegExp::exec_compile() -> bool
 {
-    auto accept_quantifier = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
+    _bytecode.clear();
+    _bytecode.emit_nop();
+    expect_expression(_pattern.begin(), _pattern.end());
+    _bytecode.emit_ret();
 
-        if(iterator != end) {
-            const char character = *iterator;
-            switch(character) {
-                case '?': // zero or one
-                    ++iterator;
-                    emit_rep(0, +1);
-                    break;
-                case '*': // zero or more
-                    ++iterator;
-                    emit_rep(0, -1);
-                    break;
-                case '+': // one or more
-                    ++iterator;
-                    emit_rep(1, -1);
-                    break;
-                default:
-                    break;
-            }
-        }
-        return iterator - begin;
-    };
-
-    auto expect_stx = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            char character = *iterator;
-            if(character == '^') {
-                ++iterator;
-                emit_stx();
-            }
-            else {
-                throw std::runtime_error("stx was expected");
-            }
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, stx was expected");
-        }
-        return iterator - begin;
-    };
-
-    auto expect_etx = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            char character = *iterator;
-            if(character == '$') {
-                ++iterator;
-                emit_etx();
-            }
-            else {
-                throw std::runtime_error("etx was expected");
-            }
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, etx was expected");
-        }
-        return iterator - begin;
-    };
-
-    auto expect_any = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            char character = *iterator;
-            if(character == '.') {
-                ++iterator;
-                iterator += accept_quantifier(iterator, end);
-                emit_any();
-            }
-            else {
-                throw std::runtime_error("any was expected");
-            }
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, any was expected");
-        }
-        return iterator - begin;
-    };
-
-    auto expect_esc = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            char character = *iterator;
-            if(character == '\\') {
-                ++iterator;
-            }
-            else {
-                throw std::runtime_error("esc was expected");
-            }
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, esc was expected");
-        }
-        if(iterator != end) {
-            char character = *iterator;
-            switch(character) {
-                case 'a': // bell
-                    character = '\a';
-                    break;
-                case 'b': // backspace
-                    character = '\b';
-                    break;
-                case 't': // horizontal tab
-                    character = '\t';
-                    break;
-                case 'r': // carriage return
-                    character = '\r';
-                    break;
-                case 'n': // newline
-                    character = '\n';
-                    break;
-                case 'v': // vertical tab
-                    character = '\v';
-                    break;
-                case 'f': // form feed
-                    character = '\f';
-                    break;
-                default:
-                    break;
-            }
-            switch(character) {
-                case '?':
-                case '*':
-                case '+':
-                case '^':
-                case '$':
-                case '.':
-                case '\\':
-                case '\a':
-                case '\b':
-                case '\t':
-                case '\r':
-                case '\n':
-                case '\v':
-                case '\f':
-                    ++iterator;
-                    iterator += accept_quantifier(iterator, end);
-                    emit_chr(character);
-                    break;
-                default:
-                    throw std::runtime_error("invalid escape sequence");
-            }
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, esc was expected");
-        }
-        return iterator - begin;
-    };
-
-    auto expect_chr = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            char character = *iterator;
-            ++iterator;
-            iterator += accept_quantifier(iterator, end);
-            emit_chr(character);
-        }
-        else {
-            throw std::runtime_error("unexpected end of string, chr was expected");
-        }
-        return iterator - begin;
-    };
-
-    auto expect_expression = [&](std::string::const_iterator begin, std::string::const_iterator end) -> size_t
-    {
-        auto iterator = begin;
-
-        if(iterator != end) {
-            do {
-                const char character = *iterator;
-                switch(character) {
-                    case '?':
-                        throw std::runtime_error("unexpected <?> quantifier");
-                    case '*':
-                        throw std::runtime_error("unexpected <*> quantifier");
-                    case '+':
-                        throw std::runtime_error("unexpected <+> quantifier");
-                    case '^':
-                        iterator += expect_stx(iterator, end);
-                        break;
-                    case '$':
-                        iterator += expect_etx(iterator, end);
-                        break;
-                    case '.':
-                        iterator += expect_any(iterator, end);
-                        break;
-                    case '\\':
-                        iterator += expect_esc(iterator, end);
-                        break;
-                    default:
-                        iterator += expect_chr(iterator, end);
-                        break;
-                }
-            } while(iterator != end);
-        }
-        return iterator - begin;
-    };
-
-    auto do_compile = [&]() -> bool
-    {
-        clear();
-        emit_nop();
-        expect_expression(_pattern.begin(), _pattern.end());
-        emit_ret();
-
-        return true;
-    };
-
-    return do_compile();
+    return true;
 }
 
 auto RegExp::exec_compare() -> bool
@@ -361,40 +84,255 @@ auto RegExp::exec_compare() -> bool
     return false;
 }
 
+auto RegExp::expect_expression(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        do {
+            const char character = *iterator;
+            switch(character) {
+                case '?':
+                    throw std::runtime_error("unexpected <?> quantifier");
+                case '*':
+                    throw std::runtime_error("unexpected <*> quantifier");
+                case '+':
+                    throw std::runtime_error("unexpected <+> quantifier");
+                case '^':
+                    iterator += expect_stx(iterator, end);
+                    break;
+                case '$':
+                    iterator += expect_etx(iterator, end);
+                    break;
+                case '.':
+                    iterator += expect_any(iterator, end);
+                    break;
+                case '\\':
+                    iterator += expect_esc(iterator, end);
+                    break;
+                default:
+                    iterator += expect_chr(iterator, end);
+                    break;
+            }
+        } while(iterator != end);
+    }
+    return iterator - begin;
+};
+
+auto RegExp::accept_quantifier(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        const char character = *iterator;
+        switch(character) {
+            case '?': // zero or one
+                ++iterator;
+                _bytecode.emit_rep(0, +1);
+                break;
+            case '*': // zero or more
+                ++iterator;
+                _bytecode.emit_rep(0, -1);
+                break;
+            case '+': // one or more
+                ++iterator;
+                _bytecode.emit_rep(1, -1);
+                break;
+            default:
+                break;
+        }
+    }
+    return iterator - begin;
+}
+
+auto RegExp::expect_stx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        char character = *iterator;
+        if(character == '^') {
+            ++iterator;
+            _bytecode.emit_stx();
+        }
+        else {
+            throw std::runtime_error("stx was expected");
+        }
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when stx was expected");
+    }
+    return iterator - begin;
+}
+
+auto RegExp::expect_etx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        char character = *iterator;
+        if(character == '$') {
+            ++iterator;
+            _bytecode.emit_etx();
+        }
+        else {
+            throw std::runtime_error("etx was expected");
+        }
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when etx was expected");
+    }
+    return iterator - begin;
+}
+
+auto RegExp::expect_any(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        char character = *iterator;
+        if(character == '.') {
+            ++iterator;
+            iterator += accept_quantifier(iterator, end);
+            _bytecode.emit_any();
+        }
+        else {
+            throw std::runtime_error("any was expected");
+        }
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when any was expected");
+    }
+    return iterator - begin;
+}
+
+auto RegExp::expect_esc(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        char character = *iterator;
+        if(character == '\\') {
+            ++iterator;
+        }
+        else {
+            throw std::runtime_error("esc was expected");
+        }
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when esc was expected");
+    }
+    if(iterator != end) {
+        char character = *iterator;
+        switch(character) {
+            case 'a': // bell
+                character = '\a';
+                break;
+            case 'b': // backspace
+                character = '\b';
+                break;
+            case 't': // horizontal tab
+                character = '\t';
+                break;
+            case 'r': // carriage return
+                character = '\r';
+                break;
+            case 'n': // newline
+                character = '\n';
+                break;
+            case 'v': // vertical tab
+                character = '\v';
+                break;
+            case 'f': // form feed
+                character = '\f';
+                break;
+            default:
+                break;
+        }
+        switch(character) {
+            case '?':
+            case '*':
+            case '+':
+            case '^':
+            case '$':
+            case '.':
+            case '\\':
+            case '\a':
+            case '\b':
+            case '\t':
+            case '\r':
+            case '\n':
+            case '\v':
+            case '\f':
+                ++iterator;
+                iterator += accept_quantifier(iterator, end);
+                _bytecode.emit_chr(character);
+                break;
+            default:
+                throw std::runtime_error("invalid escape sequence");
+        }
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when esc was expected");
+    }
+    return iterator - begin;
+}
+
+auto RegExp::expect_chr(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+{
+    auto iterator = begin;
+
+    if(iterator != end) {
+        char character = *iterator;
+        ++iterator;
+        iterator += accept_quantifier(iterator, end);
+        _bytecode.emit_chr(character);
+    }
+    else {
+        throw std::runtime_error("unexpected end of string when chr was expected");
+    }
+    return iterator - begin;
+}
+
 auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator string) -> bool
 {
-    uint32_t repeat_cnt = 0;
-    uint32_t repeat_max = 0;
-    uint32_t repeat_min = 0;
+    const auto bytecode_end = _bytecode.end();
+    const auto string_begin = _string.begin();
+    const auto string_end   = _string.end();
+    auto       prev_opcode  = opcode;
+    auto       prev_string  = string;
+    uint32_t   repeat_cnt   = 0;
+    uint32_t   repeat_max   = 0;
+    uint32_t   repeat_min   = 0;
 
-    auto op_nop = [&]() -> bool
+    auto exec_nop = [&]() -> bool
     {
         opcode += 1;
         return true;
     };
 
-    auto op_stx = [&]() -> bool
+    auto exec_stx = [&]() -> bool
     {
         opcode += 1;
-        if(string == _string.begin()) {
+        if(string == string_begin) {
             return true;
         }
         return false;
     };
 
-    auto op_etx = [&]() -> bool
+    auto exec_etx = [&]() -> bool
     {
         opcode += 1;
-        if(string == _string.end()) {
+        if(string == string_end) {
             return true;
         }
         return false;
     };
 
-    auto op_any = [&]() -> bool
+    auto exec_any = [&]() -> bool
     {
         opcode += 1;
-        while((string != _string.end()) && (repeat_cnt < repeat_max)) {
+        while((string != string_end) && (repeat_cnt < repeat_max)) {
             ++string;
             ++repeat_cnt;
         }
@@ -405,11 +343,11 @@ auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator 
         return false;
     };
 
-    auto op_chr = [&]() -> bool
+    auto exec_chr = [&]() -> bool
     {
         const char expected = *(opcode + 1);
         opcode += 2;
-        while((string != _string.end()) && (repeat_cnt < repeat_max) && (*string == expected)) {
+        while((string != string_end) && (repeat_cnt < repeat_max) && (*string == expected)) {
             ++string;
             ++repeat_cnt;
         }
@@ -420,10 +358,8 @@ auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator 
         return false;
     };
 
-    auto op_rep = [&]() -> bool
+    auto exec_rep = [&]() -> bool
     {
-        const auto prev_opcode = opcode;
-        const auto prev_string = string;
         repeat_min = 0;
         repeat_min = ((repeat_min << 8) | *(opcode + 1));
         repeat_min = ((repeat_min << 8) | *(opcode + 2));
@@ -434,18 +370,17 @@ auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator 
         repeat_max = ((repeat_max << 8) | *(opcode + 6));
         repeat_max = ((repeat_max << 8) | *(opcode + 7));
         repeat_max = ((repeat_max << 8) | *(opcode + 8));
-        opcode = prev_opcode + 9;
-        string = prev_string + 0;
+        opcode += 9;
         bool status = false;
         switch(*opcode) {
-            case OP_ANY:
-                status = op_any();
+            case Opcodes::OP_ANY:
+                status = exec_any();
                 break;
-            case OP_CHR:
-                status = op_chr();
+            case Opcodes::OP_CHR:
+                status = exec_chr();
                 break;
             default:
-                throw std::runtime_error("unexpected opcode");
+                throw std::runtime_error("unexpected non-repeatable opcode");
         }
         if(status != false) {
             while(repeat_cnt != 0) {
@@ -453,7 +388,9 @@ auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator 
                 if(match(opcode, string) != false) {
                     return true;
                 }
-                --repeat_cnt;
+                else {
+                    --repeat_cnt;
+                }
             }
             if(repeat_min == 0) {
                 string = prev_string;
@@ -465,41 +402,42 @@ auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator 
         return false;
     };
 
-    auto op_ret = [&]() -> bool
+    auto exec_ret = [&]() -> bool
     {
-        opcode = _bytecode.end();
+        opcode = bytecode_end;
         return true;
     };
 
     auto do_match = [&]() -> bool
     {
         bool status = false;
-
-        while(opcode != _bytecode.end()) {
-            repeat_cnt = 0;
-            repeat_min = 1;
-            repeat_max = 1;
+        while(opcode != bytecode_end) {
+            prev_opcode = opcode;
+            prev_string = string;
+            repeat_cnt  = 0;
+            repeat_min  = 1;
+            repeat_max  = 1;
             switch(*opcode) {
-                case OP_NOP:
-                    status = op_nop();
+                case Opcodes::OP_NOP:
+                    status = exec_nop();
                     break;
-                case OP_STX:
-                    status = op_stx();
+                case Opcodes::OP_STX:
+                    status = exec_stx();
                     break;
-                case OP_ETX:
-                    status = op_etx();
+                case Opcodes::OP_ETX:
+                    status = exec_etx();
                     break;
-                case OP_ANY:
-                    status = op_any();
+                case Opcodes::OP_ANY:
+                    status = exec_any();
                     break;
-                case OP_CHR:
-                    status = op_chr();
+                case Opcodes::OP_CHR:
+                    status = exec_chr();
                     break;
-                case OP_REP:
-                    status = op_rep();
+                case Opcodes::OP_REP:
+                    status = exec_rep();
                     break;
-                case OP_RET:
-                    status = op_ret();
+                case Opcodes::OP_RET:
+                    status = exec_ret();
                     break;
                 default:
                     throw std::runtime_error("unexpected opcode");

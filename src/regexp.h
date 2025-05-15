@@ -17,6 +17,8 @@
 #ifndef __RegExp_h__
 #define __RegExp_h__
 
+#include "bytecode.h"
+
 // ---------------------------------------------------------------------------
 // RegExp
 // ---------------------------------------------------------------------------
@@ -40,45 +42,26 @@ public: // public interface
 
     auto compare(const std::string& string) -> bool;
 
-protected: // protected definitions
-    using ByteCode = std::vector<uint8_t>;
-
-    static constexpr uint8_t OP_NOP = 0x00;
-    static constexpr uint8_t OP_STX = 0x01;
-    static constexpr uint8_t OP_ETX = 0x02;
-    static constexpr uint8_t OP_ANY = 0x03;
-    static constexpr uint8_t OP_CHR = 0x04;
-    static constexpr uint8_t OP_REP = 0x05;
-    static constexpr uint8_t OP_RET = 0x06;
-
 protected: // protected interface
-    auto clear() -> void;
-
-    auto emit_byte(const uint8_t value) -> void;
-
-    auto emit_word(const uint16_t value) -> void;
-
-    auto emit_long(const uint32_t value) -> void;
-
-    auto emit_nop() -> void;
-
-    auto emit_stx() -> void;
-
-    auto emit_etx() -> void;
-
-    auto emit_any() -> void;
-
-    auto emit_chr(const uint8_t character) -> void;
-
-    auto emit_rep(const uint32_t min, const uint32_t max) -> void;
-
-    auto emit_ret() -> void;
-
     auto exec_compile() -> bool;
 
     auto exec_compare() -> bool;
 
-    auto match(ByteCode::const_iterator bytecode, std::string::const_iterator string) -> bool;
+    auto match(ByteCode::const_iterator opcode, std::string::const_iterator string) -> bool;
+
+    auto expect_expression(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto accept_quantifier(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto expect_stx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto expect_etx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto expect_any(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto expect_esc(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+
+    auto expect_chr(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
 
 protected: // protected data
     ByteCode    _bytecode;

@@ -70,18 +70,21 @@ regex_PROGRAM = bin/regex.bin
 regex_SOURCES = \
 	src/globals.cc \
 	src/program.cc \
+	src/bytecode.cc \
 	src/regexp.cc \
 	$(NULL)
 
 regex_HEADERS = \
 	src/globals.h \
 	src/program.h \
+	src/bytecode.h \
 	src/regexp.h \
 	$(NULL)
 
 regex_OBJECTS = \
 	src/globals.o \
 	src/program.o \
+	src/bytecode.o \
 	src/regexp.o \
 	$(NULL)
 
