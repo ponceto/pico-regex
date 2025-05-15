@@ -88,29 +88,66 @@ auto Program::init(const ArgList& args) -> bool
 
 auto Program::main(const ArgList& args) -> void
 {
+    RegExp regexp;
+
     auto println = [](std::ostream& stream, const std::string& string) -> void
     {
         if(Globals::verbose != false) {
-            stream << string << std::endl;
+            stream << "🔵" << ' ' << string << std::endl;
+        }
+    };
+
+    auto success = [](std::ostream& stream, const std::string& string) -> void
+    {
+        Globals::status = EXIT_SUCCESS;
+        if(Globals::verbose != false) {
+            stream << "🟢" << ' ' << string << std::endl;
+        }
+    };
+
+    auto failure = [](std::ostream& stream, const std::string& string) -> void
+    {
+        Globals::status = EXIT_FAILURE;
+        if(Globals::verbose != false) {
+            stream << "🔴" << ' ' << string << std::endl;
+        }
+    };
+
+    auto do_compile = [&](std::ostream& stream) -> void
+    {
+        println(stream, std::string("compiling") + ' ' + '"' + Globals::pattern + '"');
+        try {
+            if(regexp.compile(Globals::pattern) == false) {
+                throw std::runtime_error("invalid regular expression");
+            }
+        }
+        catch(const std::exception& e) {
+            failure(stream, e.what());
+            throw std::runtime_error("an error occured while compiling");
+        }
+    };
+
+    auto do_compare = [&](std::ostream& stream) -> void
+    {
+        println(stream, std::string("comparing") + ' ' + '"' + Globals::string + '"');
+        try {
+            if(regexp.compare(Globals::string) != false) {
+                success(stream, "the string matches the regular expression");
+            }
+            else {
+                failure(stream, "the string does not match the regular expression");
+            }
+        }
+        catch(const std::exception& e) {
+            failure(stream, e.what());
+            throw std::runtime_error("an error occured while comparing");
         }
     };
 
     auto do_main = [&](std::ostream& stream) -> void
     {
-        RegExp regexp;
-        println(stream, std::string("compiling") + ' ' + '"' + Globals::pattern + '"');
-        if(regexp.compile(Globals::pattern) == false) {
-            throw std::runtime_error("invalid regular expression");
-        }
-        println(stream, std::string("comparing") + ' ' + '"' + Globals::string + '"');
-        if(regexp.compare(Globals::string) != false) {
-            println(stream, "the string matches the regular expression");
-            Globals::status = EXIT_SUCCESS;
-        }
-        else {
-            println(stream, "the string does not match the regular expression");
-            Globals::status = EXIT_FAILURE;
-        }
+        do_compile(stream);
+        do_compare(stream);
     };
 
     return do_main(std::cout);

@@ -65,7 +65,7 @@ check: check_regex
 # regex files
 # ----------------------------------------------------------------------------
 
-regex_PROGRAM = regex.bin
+regex_PROGRAM = bin/regex.bin
 
 regex_SOURCES = \
 	src/globals.cc \
@@ -116,7 +116,7 @@ clean_regex:
 # ----------------------------------------------------------------------------
 
 check_regex:
-	./testsuite.sh
+	cd ./bin && ./testsuite.sh
 
 # ----------------------------------------------------------------------------
 # End-Of-File

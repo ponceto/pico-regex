@@ -60,6 +60,8 @@ You can also use the `-j` option if you want to build in parallel with `GNU make
 make -j{number-of-jobs}
 ```
 
+If the compilation has succeeded, you will find the program into the `bin` directory.
+
 ### Clean the project
 
 To clean the project, simply type:
