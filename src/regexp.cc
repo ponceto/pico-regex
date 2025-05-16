@@ -39,52 +39,44 @@
 
 RegExp::RegExp()
     : _bytecode()
-    , _pattern()
-    , _string()
 {
 }
 
-auto RegExp::compile(const std::string& pattern) -> bool
+auto RegExp::compile(const std::string& string) -> bool
 {
-    _pattern = pattern;
+    Compiler compiler(_bytecode, string);
 
-    return exec_compile();
+    return compiler.compile();
 }
 
 auto RegExp::compare(const std::string& string) -> bool
 {
-    _string = string;
+    Executor executor(_bytecode, string);
 
-    return exec_compare();
+    return executor.execute();
 }
 
-auto RegExp::exec_compile() -> bool
+// ---------------------------------------------------------------------------
+// Compiler
+// ---------------------------------------------------------------------------
+
+Compiler::Compiler(ByteCode& bytecode, const std::string& string)
+    : _bytecode(bytecode)
+    , _string(string)
+{
+}
+
+auto Compiler::compile() -> bool
 {
     _bytecode.clear();
     _bytecode.emit_nop();
-    expect_expression(_pattern.begin(), _pattern.end());
+    expect_expression(_string.begin(), _string.end());
     _bytecode.emit_ret();
 
     return true;
 }
 
-auto RegExp::exec_compare() -> bool
-{
-    auto iter = _string.begin();
-    auto last = _string.end();
-
-    if(match(_bytecode.begin(), iter) != false) {
-        return true;
-    }
-    while(iter != last) {
-        if(match(_bytecode.begin(), iter++) != false) {
-            return true;
-        }
-    }
-    return false;
-}
-
-auto RegExp::expect_expression(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_expression(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -119,7 +111,7 @@ auto RegExp::expect_expression(std::string::const_iterator begin, std::string::c
     return iterator - begin;
 };
 
-auto RegExp::accept_quantifier(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::accept_quantifier(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -145,7 +137,7 @@ auto RegExp::accept_quantifier(std::string::const_iterator begin, std::string::c
     return iterator - begin;
 }
 
-auto RegExp::expect_stx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_stx(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -156,7 +148,7 @@ auto RegExp::expect_stx(std::string::const_iterator begin, std::string::const_it
             _bytecode.emit_stx();
         }
         else {
-            throw std::runtime_error("stx was expected");
+            throw std::runtime_error("unexpected character when stx was expected");
         }
     }
     else {
@@ -165,7 +157,7 @@ auto RegExp::expect_stx(std::string::const_iterator begin, std::string::const_it
     return iterator - begin;
 }
 
-auto RegExp::expect_etx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_etx(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -176,7 +168,7 @@ auto RegExp::expect_etx(std::string::const_iterator begin, std::string::const_it
             _bytecode.emit_etx();
         }
         else {
-            throw std::runtime_error("etx was expected");
+            throw std::runtime_error("unexpected character when etx was expected");
         }
     }
     else {
@@ -185,7 +177,7 @@ auto RegExp::expect_etx(std::string::const_iterator begin, std::string::const_it
     return iterator - begin;
 }
 
-auto RegExp::expect_any(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_any(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -197,7 +189,7 @@ auto RegExp::expect_any(std::string::const_iterator begin, std::string::const_it
             _bytecode.emit_any();
         }
         else {
-            throw std::runtime_error("any was expected");
+            throw std::runtime_error("unexpected character when any was expected");
         }
     }
     else {
@@ -206,7 +198,7 @@ auto RegExp::expect_any(std::string::const_iterator begin, std::string::const_it
     return iterator - begin;
 }
 
-auto RegExp::expect_esc(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_esc(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -216,7 +208,7 @@ auto RegExp::expect_esc(std::string::const_iterator begin, std::string::const_it
             ++iterator;
         }
         else {
-            throw std::runtime_error("esc was expected");
+            throw std::runtime_error("unexpected character when esc was expected");
         }
     }
     else {
@@ -237,7 +229,7 @@ auto RegExp::expect_esc(std::string::const_iterator begin, std::string::const_it
             case 'r': // carriage return
                 character = '\r';
                 break;
-            case 'n': // newline
+            case 'n': // new line
                 character = '\n';
                 break;
             case 'v': // vertical tab
@@ -278,7 +270,7 @@ auto RegExp::expect_esc(std::string::const_iterator begin, std::string::const_it
     return iterator - begin;
 }
 
-auto RegExp::expect_chr(std::string::const_iterator begin, std::string::const_iterator end) -> size_t
+auto Compiler::expect_chr(StringIterator begin, StringIterator end) -> size_t
 {
     auto iterator = begin;
 
@@ -294,7 +286,34 @@ auto RegExp::expect_chr(std::string::const_iterator begin, std::string::const_it
     return iterator - begin;
 }
 
-auto RegExp::match(ByteCode::const_iterator opcode, std::string::const_iterator string) -> bool
+// ---------------------------------------------------------------------------
+// Executor
+// ---------------------------------------------------------------------------
+
+Executor::Executor(ByteCode& bytecode, const std::string& string)
+    : _bytecode(bytecode)
+    , _string(string)
+{
+}
+
+auto Executor::execute() -> bool
+{
+    auto bytecode_begin = _bytecode.begin();
+    auto string_begin   = _string.begin();
+    auto string_end     = _string.end();
+
+    if(match(bytecode_begin, string_begin) != false) {
+        return true;
+    }
+    while(string_begin != string_end) {
+        if(match(bytecode_begin, string_begin++) != false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+auto Executor::match(OpcodeIterator opcode, StringIterator string) -> bool
 {
     const auto bytecode_end = _bytecode.end();
     const auto string_begin = _string.begin();

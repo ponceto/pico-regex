@@ -38,35 +38,88 @@ public: // public interface
 
     virtual ~RegExp() = default;
 
-    auto compile(const std::string& pattern) -> bool;
+    auto compile(const std::string& string) -> bool;
 
     auto compare(const std::string& string) -> bool;
 
+protected: // protected data
+    ByteCode _bytecode;
+};
+
+// ---------------------------------------------------------------------------
+// Compiler
+// ---------------------------------------------------------------------------
+
+class Compiler
+{
+public: // public interface
+    Compiler(ByteCode&, const std::string&);
+
+    Compiler(Compiler&&) = delete;
+
+    Compiler& operator=(Compiler&&) = delete;
+
+    Compiler(const Compiler&) = delete;
+
+    Compiler& operator=(const Compiler&) = delete;
+
+    virtual ~Compiler() = default;
+
+    auto compile() -> bool;
+
 protected: // protected interface
-    auto exec_compile() -> bool;
+    using OpcodeIterator = ByteCode::const_iterator;
+    using StringIterator = std::string::const_iterator;
 
-    auto exec_compare() -> bool;
+    auto expect_expression(StringIterator begin, StringIterator end) -> size_t;
 
-    auto match(ByteCode::const_iterator opcode, std::string::const_iterator string) -> bool;
+    auto accept_quantifier(StringIterator begin, StringIterator end) -> size_t;
 
-    auto expect_expression(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+    auto expect_stx(StringIterator begin, StringIterator end) -> size_t;
 
-    auto accept_quantifier(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+    auto expect_etx(StringIterator begin, StringIterator end) -> size_t;
 
-    auto expect_stx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+    auto expect_any(StringIterator begin, StringIterator end) -> size_t;
 
-    auto expect_etx(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+    auto expect_esc(StringIterator begin, StringIterator end) -> size_t;
 
-    auto expect_any(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
-
-    auto expect_esc(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
-
-    auto expect_chr(std::string::const_iterator begin, std::string::const_iterator end) -> size_t;
+    auto expect_chr(StringIterator begin, StringIterator end) -> size_t;
 
 protected: // protected data
-    ByteCode    _bytecode;
-    std::string _pattern;
-    std::string _string;
+    ByteCode&         _bytecode;
+    const std::string _string;
+};
+
+// ---------------------------------------------------------------------------
+// Executor
+// ---------------------------------------------------------------------------
+
+class Executor
+{
+public: // public interface
+    Executor(ByteCode&, const std::string&);
+
+    Executor(Executor&&) = delete;
+
+    Executor& operator=(Executor&&) = delete;
+
+    Executor(const Executor&) = delete;
+
+    Executor& operator=(const Executor&) = delete;
+
+    virtual ~Executor() = default;
+
+    auto execute() -> bool;
+
+protected: // protected interface
+    using OpcodeIterator = ByteCode::const_iterator;
+    using StringIterator = std::string::const_iterator;
+
+    auto match(OpcodeIterator opcode, StringIterator string) -> bool;
+
+protected: // protected data
+    ByteCode&         _bytecode;
+    const std::string _string;
 };
 
 // ---------------------------------------------------------------------------

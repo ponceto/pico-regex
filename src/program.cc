@@ -117,7 +117,10 @@ auto Program::main(const ArgList& args) -> void
     {
         println(stream, std::string("compiling") + ' ' + '"' + Globals::pattern + '"');
         try {
-            if(regexp.compile(Globals::pattern) == false) {
+            if(regexp.compile(Globals::pattern) != false) {
+                success(stream, "the regular expression has been compiled");
+            }
+            else {
                 throw std::runtime_error("invalid regular expression");
             }
         }

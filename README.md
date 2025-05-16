@@ -31,7 +31,7 @@ Escaped sequences:
 \b ... backspace
 \t ... horizontal tab
 \r ... carriage return
-\n ... newline
+\n ... new line
 \v ... vertical tab
 \f ... form feed
 ```
@@ -59,8 +59,6 @@ You can also use the `-j` option if you want to build in parallel with `GNU make
 ```
 make -j{number-of-jobs}
 ```
-
-If the compilation has succeeded, you will find the program into the `bin` directory.
 
 ### Clean the project
 
@@ -97,8 +95,25 @@ Options:
 
 ### Run
 
+You will find the program into the `bin` directory:
+
 ```
-./regex.bin
+./bin/regex.bin
+```
+
+Example:
+
+```
+./bin/regex.bin '^lorem.*amet$' 'lorem ipsum dolor sit amet'
+```
+
+Result:
+
+```
+🔵 compiling "^lorem.*amet$"
+🟢 the regular expression has been compiled
+🔵 comparing "lorem ipsum dolor sit amet"
+🟢 the string matches the regular expression
 ```
 
 ## LICENSE
